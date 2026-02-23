@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nedräkning</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --accent: #e8ff47;
+    --dim: #2a2a35;
+    --text: #f0f0f0;
+    --muted: #666;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Subtle grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(232,255,71,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232,255,71,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+  }
+
+  /* Glow orb */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(232,255,71,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .wrapper {
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .label-top {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    font-size: 0.75rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 2rem;
+  }
+
+  .countdown {
+    display: flex;
+    gap: 0;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+
+  .unit:not(:last-child)::after {
+    content: ':';
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3rem, 12vw, 8rem);
+    color: var(--dim);
+    line-height: 1;
+    padding: 0 0.15em;
+    margin-top: -0.05em;
+  }
+
+  .number {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(4rem, 15vw, 10rem);
+    line-height: 0.9;
+    color: var(--accent);
+    text-shadow: 0 0 40px rgba(232,255,71,0.3);
+    transition: opacity 0.15s;
+    min-width: 2ch;
+    text-align: center;
+  }
+
+  .unit-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 0.5rem;
+    font-weight: 400;
+  }
+
+  .separator {
+    width: 60px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--dim), transparent);
+    margin: 2.5rem auto;
+  }
+
+  .target-date {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+  }
+
+  .target-date span {
+    color: var(--accent);
+    font-weight: 400;
+  }
+
+  /* Pulse on tick */
+  @keyframes pulse {
+    0% { text-shadow: 0 0 40px rgba(232,255,71,0.3); }
+    50% { text-shadow: 0 0 60px rgba(232,255,71,0.6), 0 0 100px rgba(232,255,71,0.2); }
+    100% { text-shadow: 0 0 40px rgba(232,255,71,0.3); }
+  }
+
+  .tick { animation: pulse 0.4s ease-out; }
+
+  /* Seconds display */
+  .seconds-row {
+    margin-top: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  .seconds-bar-wrap {
+    width: 200px;
+    height: 2px;
+    background: var(--dim);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .seconds-bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.95s linear;
+    box-shadow: 0 0 8px rgba(232,255,71,0.5);
+  }
+
+  .sec-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    color: var(--muted);
+    min-width: 2ch;
+    text-align: right;
+  }
+
+  .sec-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    min-width: 3ch;
+  }
+
+  .done-message {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2rem, 8vw, 5rem);
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-shadow: 0 0 40px rgba(232,255,71,0.5);
+    display: none;
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <p class="label-top">Nedräkning till BI Claude Code demo</p>
+
+  <div id="countdown-display">
+    <div class="countdown">
+      <div class="unit">
+        <div class="number" id="days">00</div>
+        <div class="unit-label">dagar</div>
+      </div>
+      <div class="unit">
+        <div class="number" id="hours">00</div>
+        <div class="unit-label">timmar</div>
+      </div>
+      <div class="unit">
+        <div class="number" id="minutes">00</div>
+        <div class="unit-label">minuter</div>
+      </div>
+    </div>
+
+    <div class="seconds-row">
+      <span class="sec-num" id="secs">00</span>
+      <div class="seconds-bar-wrap">
+        <div class="seconds-bar" id="sec-bar" style="width:100%"></div>
+      </div>
+      <span class="sec-label">sek</span>
+    </div>
+  </div>
+
+  <div class="done-message" id="done">🎉 Det är dags!</div>
+
+  <div class="separator"></div>
+  <p class="target-date">19 mars 2026 &nbsp;|&nbsp; <span>kl 09:00</span></p>
+</div>
+
+<script>
+  // Target: 19 March 2026 at 09:00 local time
+  const target = new Date('2026-03-19T09:00:00');
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function tick(el) {
+    el.classList.remove('tick');
+    void el.offsetWidth;
+    el.classList.add('tick');
+  }
+
+  let prevSecs = -1;
+  let prevMins  = -1;
+
+  function update() {
+    const now  = new Date();
+    const diff = target - now;
+
+    if (diff <= 0) {
+      document.getElementById('countdown-display').style.display = 'none';
+      document.getElementById('done').style.display = 'block';
+      return;
+    }
+
+    const totalSecs = Math.floor(diff / 1000);
+    const days    = Math.floor(totalSecs / 86400);
+    const hours   = Math.floor((totalSecs % 86400) / 3600);
+    const minutes = Math.floor((totalSecs % 3600) / 60);
+    const secs    = totalSecs % 60;
+
+    document.getElementById('days').textContent    = pad(days);
+    document.getElementById('hours').textContent   = pad(hours);
+    document.getElementById('minutes').textContent = pad(minutes);
+    document.getElementById('secs').textContent    = pad(secs);
+
+    // seconds progress bar (full at :00, empty at :59)
+    document.getElementById('sec-bar').style.width = ((60 - secs) / 60 * 100) + '%';
+
+    if (secs !== prevSecs) { tick(document.getElementById('secs')); prevSecs = secs; }
+    if (minutes !== prevMins) { tick(document.getElementById('minutes')); prevMins = minutes; }
+  }
+
+  update();
+  setInterval(update, 1000);
+</script>
+</body>
+</html>
